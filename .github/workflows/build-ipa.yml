@@ -18,30 +18,25 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
       
-      - name: Generate Xcode project
+      - name: Create fake codesigning directory
+        run: |
+          mkdir -p build-system/fake-codesigning
+          touch build-system/fake-codesigning/.placeholder
+      
+      - name: Build IPA for device
         run: |
           python3 build-system/Make/Make.py \
             --cacheDir="$HOME/telegram-bazel-cache" \
-            generateProject \
+            build \
             --configurationPath=build-system/template_minimal_development_configuration.json \
-            --disableProvisioningProfiles
+            --codesigningInformationPath=build-system/fake-codesigning \
+            --buildNumber=1 \
+            --configuration=release_arm64
       
-      - name: Build for device
+      - name: Find IPA
         run: |
-          xcodebuild -workspace Telegram.xcworkspace \
-                     -scheme Telegram \
-                     -sdk iphoneos \
-                     -configuration Release \
-                     CODE_SIGNING_ALLOWED=NO \
-                     build
-      
-      - name: Create Payload and sign
-        run: |
-          # Находим собранный .app
-          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "Telegram.app" -type d | head -1)
-          mkdir -p Payload
-          cp -r "$APP_PATH" Payload/
-          zip -r TrollGram.ipa Payload/
+          find . -name "*.ipa" -exec cp {} TrollGram.ipa \;
+          ls -la TrollGram.ipa || echo "IPA not found"
       
       - name: Upload IPA
         uses: actions/upload-artifact@v4

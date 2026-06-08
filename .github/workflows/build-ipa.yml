@@ -19,28 +19,32 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
       
       - name: Generate Xcode project
-        run: python3 build-system/Make/Make.py --cacheDir="$HOME/telegram-bazel-cache" generateProject --configurationPath=build-system/template_minimal_development_configuration.json
+        run: |
+          python3 build-system/Make/Make.py \
+            --cacheDir="$HOME/telegram-bazel-cache" \
+            generateProject \
+            --configurationPath=build-system/template_minimal_development_configuration.json \
+            --disableProvisioningProfiles
       
-      - name: Build and Archive
+      - name: Build for device
         run: |
           xcodebuild -workspace Telegram.xcworkspace \
                      -scheme Telegram \
                      -sdk iphoneos \
                      -configuration Release \
-                     -archivePath Telegram.xcarchive \
-                     archive
+                     CODE_SIGNING_ALLOWED=NO \
+                     build
       
-      - name: Export IPA
+      - name: Create Payload and sign
         run: |
-          mkdir -p ./build
-          xcodebuild -exportArchive \
-                     -archivePath Telegram.xcarchive \
-                     -exportPath ./build \
-                     -exportOptionsPlist ExportOptions.plist \
-                     -allowProvisioningUpdates
+          # Находим собранный .app
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "Telegram.app" -type d | head -1)
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r TrollGram.ipa Payload/
       
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: TrollGram.ipa
-          path: ./build/*.ipa
+          path: TrollGram.ipa

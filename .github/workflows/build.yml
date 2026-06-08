@@ -19,12 +19,7 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
       
       - name: Generate Xcode project
-        run: |
-          python3 build-system/Make/Make.py \
-  --cacheDir="$HOME/telegram-bazel-cache" \
-  generateProject \
-  --configurationPath=build-system/template_minimal_development_configuration.json \
-  --xcodeManagedCodesigning
+        run: python3 build-system/Make/Make.py --cacheDir="$HOME/telegram-bazel-cache" generateProject --configurationPath=build-system/template_minimal_development_configuration.json
       
       - name: Build and Archive
         run: |
